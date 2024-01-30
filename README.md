@@ -10,7 +10,7 @@ Include link to project folder once created.
 ## What's in this repo?
 This repo contains the analysis scripts for developing and evaluating dose-response analysis methods. The data is stored in a separate repo [`2024_01_18_Dose_response_methods-data`](https://github.com/broadinstitute/2024_01_18_Dose_response_methods-data), which is added as a submodule to this repo. The data are previously published transcriptomics and Cell Painting data, as described [here](https://www.sciencedirect.com/science/article/pii/S0041008X22001776). 
 
-## How to use this repo?
+## How to use this repo for the first time?
 
 1. Fork the repo
 2. Clone the repo
@@ -25,3 +25,39 @@ This repo contains the analysis scripts for developing and evaluating dose-respo
     cd 2024_01_18_Dose_response_methods-data
     dvc pull
     ```  
+
+## How to update this repo?
+This repo is structured as a parent (2024_01_18_Dose_response_methods) with a submodule containing the data (2024_01_18_Dose_response_methods-data), which is tracked with dvc. All three components (parent repo, submodule repo, actual data files) must by synchronized. Here's how:
+
+1. Navigate to 2024_01_18_Dose_response_methods and pull most recent changes:
+    ``` bash
+    git pull
+    ```
+2. Navigate to the submodule and pull most recent changes in both the repository and actual data files:
+    ``` bash
+    cd ./2024_01_18_Dose_response_methods-data
+    git pull
+    dvc pull
+    ```
+
+## How to sync modifications to the data files?
+If you've changed the data files, updates must be committed and pushed to both S3 via dvc, to the relevant .dvc file within the data submodule repository, and to the parent repository such that it is linked to the most recent submodule commit. Here's how to fully update all three components after modifying the data files:
+
+1. Navigate to the data submodule within the parent repository
+2. Stage and push changes to the data to S3 using dvc. Since our main directory containing all dvc tracked data files is called 'data', the commands are:
+    ``` bash
+    dvc add data
+    dvc push
+    ```
+3. Stage, commit, and push changes to the data.dvc file within the data submodule repository:
+    ``` bash
+    git add data.dvc
+    git commit -am "commit message"
+    git push
+    ```
+4. Navigate to the parent repository and stage, commit, and push changes to the submodule:
+    ``` bash
+    git add 2024_01_18_Dose_response_methods-data
+    git commit -am "update submodule to most recent commit"
+    git push
+    ```
