@@ -18,20 +18,20 @@ library(arrow)
 local.data.path <- "/Users/jessicaewald/Desktop/OASIS/analysis/POD_subsampling/data/"
 
 # read in files & convert to proper type
-httr_key <- read_parquet(paste0(local.data.path, "orig_data/httr_key.parquet")) %>% as.data.frame()
+httr_key <- read_parquet(paste0(local.data.path, "1_orig_data/httr_key.parquet")) %>% as.data.frame()
 
-httr_counts <- read_parquet(paste0(local.data.path, "orig_data/httr_counts.parquet")) %>% as.data.frame()
+httr_counts <- read_parquet(paste0(local.data.path, "1_orig_data/httr_counts.parquet")) %>% as.data.frame()
 rownames(httr_counts) <- httr_counts$probe_id
 httr_counts <- httr_counts[,-1]
 httr_counts <- as.matrix(httr_counts)
 
-htpp_chem <- read_parquet(paste0(local.data.path, "orig_data/htpp_chem.parquet")) %>% as.data.frame()
+htpp_chem <- read_parquet(paste0(local.data.path, "1_orig_data/htpp_chem.parquet")) %>% as.data.frame()
 
-htpp_feature <- read_parquet(paste0(local.data.path, "orig_data/htpp_feature.parquet")) %>% as.data.frame()
+htpp_feature <- read_parquet(paste0(local.data.path, "1_orig_data/htpp_feature.parquet")) %>% as.data.frame()
 
-htpp_global_mah <- read_parquet(paste0(local.data.path, "orig_data/htpp_global_mah.parquet")) %>% as.data.frame()
+htpp_global_mah <- read_parquet(paste0(local.data.path, "1_orig_data/htpp_global_mah.parquet")) %>% as.data.frame()
 
-htpp_well_norm <- read_parquet(paste0(local.data.path, "orig_data/htpp_well_norm.parquet")) %>% as.data.frame()
+htpp_well_norm <- read_parquet(paste0(local.data.path, "1_orig_data/htpp_well_norm.parquet")) %>% as.data.frame()
 
 
 #### Process transcriptomics data ####
@@ -98,10 +98,10 @@ for(i in c(1:length(chems))){
     temp.lcpm <- cbind(rownames(temp.lcpm), temp.lcpm)
     colnames(temp.lcpm)[1] <- "probe_id"
     write_parquet(temp.lcpm, 
-                  paste0(local.data.path, "sampled_data/httr/2_reps/", chem, "_2reps_", k, ".parquet"))
+                  paste0(local.data.path, "2_sampled_data/httr/2_reps/", chem, "_2reps_", k, ".parquet"))
     
     # write out in BMDExpress format for WTT
-    write.table(temp.lcpm, paste0(local.data.path, "BMDExpress_input/", chem, "_2reps_", k, ".txt"), sep="\t", col.names = NA)
+    write.table(temp.lcpm, paste0(local.data.path, "2b_BMDExpress_input/", chem, "_2reps_", k, ".txt"), sep="\t", col.names = NA)
   }
   
   # create for 3 reps
@@ -123,10 +123,10 @@ for(i in c(1:length(chems))){
     temp.lcpm <- cbind(rownames(temp.lcpm), temp.lcpm)
     colnames(temp.lcpm)[1] <- "probe_id"
     write_parquet(temp.lcpm, 
-                  paste0(local.data.path, "sampled_data/httr/3_reps/", chem, "_3reps_", k, ".parquet"))
+                  paste0(local.data.path, "2_sampled_data/httr/3_reps/", chem, "_3reps_", k, ".parquet"))
     
     # write out in BMDExpress format for WTT
-    write.table(temp.lcpm, paste0(local.data.path, "BMDExpress_input/", chem, "_3reps_", k, ".txt"), sep="\t", col.names = NA)
+    write.table(temp.lcpm, paste0(local.data.path, "2b_BMDExpress_input/", chem, "_3reps_", k, ".txt"), sep="\t", col.names = NA)
   }
 }
 
@@ -183,7 +183,7 @@ for(i in c(1:length(chems))){
     temp.dat <- cbind(rownames(temp.dat), temp.dat)
     colnames(temp.dat)[1] <- "probe_id"
     write_parquet(temp.dat, 
-                  paste0(local.data.path, "sampled_data/htpp/2_reps/", chem, "_2reps_", k, "_htpp.parquet"))
+                  paste0(local.data.path, "2_sampled_data/htpp/2_reps/", chem, "_2reps_", k, "_htpp.parquet"))
     
   }
   
@@ -206,7 +206,7 @@ for(i in c(1:length(chems))){
     temp.dat <- cbind(rownames(temp.dat), temp.dat)
     colnames(temp.dat)[1] <- "probe_id"
     write_parquet(temp.dat, 
-                  paste0(local.data.path, "sampled_data/htpp/3_reps/", chem, "_3reps_", k, "_htpp.parquet"))
+                  paste0(local.data.path, "2_sampled_data/htpp/3_reps/", chem, "_3reps_", k, "_htpp.parquet"))
   }
 }
 
