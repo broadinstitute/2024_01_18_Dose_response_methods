@@ -8,7 +8,7 @@ There are many different methods for deriving omics PODs, however, not all metho
 Include link to project folder once created. 
 
 ## What's in this repo?
-This repo contains the analysis scripts for developing and evaluating dose-response analysis methods. The data is stored in a separate repo [PUT LINK ONCE CREATED], which is added as a submodule to this repo. The data are previously published transcriptomics and Cell Painting data, as described [here](https://www.sciencedirect.com/science/article/pii/S0041008X22001776). 
+This repo contains the analysis scripts for developing and evaluating dose-response analysis methods. The data is stored in a separate repo [`2024_01_18_Dose_response_methods-data`](https://github.com/broadinstitute/2024_01_18_Dose_response_methods-data), which is added as a submodule to this repo. The data are previously published transcriptomics and Cell Painting data, as described [here](https://www.sciencedirect.com/science/article/pii/S0041008X22001776). 
 
 ## How to use this repo?
 
@@ -18,4 +18,10 @@ This repo contains the analysis scripts for developing and evaluating dose-respo
     ``` bash
     git clone git@github.com:<YOUR USER NAME>/2024_01_18_Dose_response_methods.git
     ```
-3. Download the contents of the submodule (Complete after initializing data repo)
+3. Download the contents of the submodule. If these steps give an "Unable to locate credentials" error, it probably means that you need to install the AWS CLI and configure with your credentials.
+
+    ```bash
+    git submodule update --init --recursive
+    cd 2024_01_18_Dose_response_methods-data
+    dvc pull
+    ```  
