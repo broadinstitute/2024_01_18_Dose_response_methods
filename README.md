@@ -5,7 +5,7 @@ Concentration-response analysis of omics data has emerged as a promising approac
 There are many different methods for deriving omics PODs, however, not all methods are suitable for all data modalities. In particular, popular methods that rely on molecular pathway annotations are especially difficult or impossible to generalize beyond transcriptomics data. Previous work has evaluated different methods for computing PODs with single omics data (e.g. transcriptional) by examining their reproducibility/stability and similarity to in vivo PODs derived from apical outcomes. The present work expands this investigation to a multi-omics context. There were two objectives: 1) to develop and evaluate a new method for POD calculation based on partial least squares (PLS), designed specifically to facilitate POD comparison across diverse omics data types, and 2) to evaluate the performance of both the novel and existing methods for POD calculation with multi-omics data.
 
 ## Documents
-Include link to project folder once created. 
+All project documents are in the [this Google Drive folder](https://drive.google.com/drive/folders/1HY9FMRH9JYs3KQoDViD-ZLrlZhM25z6A?usp=drive_link).  
 
 ## What's in this repo?
 This repo contains the analysis scripts for developing and evaluating dose-response analysis methods. The data is stored in a separate repo [`2024_01_18_Dose_response_methods-data`](https://github.com/broadinstitute/2024_01_18_Dose_response_methods-data), which is added as a submodule to this repo. The data are previously published transcriptomics and Cell Painting data, as described [here](https://www.sciencedirect.com/science/article/pii/S0041008X22001776). 
