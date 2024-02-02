@@ -13,27 +13,27 @@ library(arrow)
 source("../fastbmdR/fastbmdR_main.R")
 source("../fastbmdR/fastbmdR_utils.R")
 
-# use local folder for now - will be replaced by S3 + data submodule etc.
-local.data.path <- "/Users/jessicaewald/Desktop/OASIS/analysis/POD_subsampling/data/"
+# relative path to data submodule
+data.path <- "../2024_01_18_Dose_response_methods-data/data/"
 
 # get lists of paths and analysis IDs 
-httr.paths <- c(list.files(paste0(local.data.path, "2_sampled_data/httr/2_reps/"), full.names = TRUE),
-                list.files(paste0(local.data.path, "2_sampled_data/httr/3_reps/"), full.names = TRUE))
-httr.nms <- c(list.files(paste0(local.data.path, "2_sampled_data/httr/2_reps/"), full.names = FALSE),
-              list.files(paste0(local.data.path, "2_sampled_data/httr/3_reps/"), full.names = FALSE))
+httr.paths <- c(list.files(paste0(data.path, "2_sampled_data/httr/2_reps/"), full.names = TRUE),
+                list.files(paste0(data.path, "2_sampled_data/httr/3_reps/"), full.names = TRUE))
+httr.nms <- c(list.files(paste0(data.path, "2_sampled_data/httr/2_reps/"), full.names = FALSE),
+              list.files(paste0(data.path, "2_sampled_data/httr/3_reps/"), full.names = FALSE))
 httr.nms <- gsub(".parquet", "", httr.nms)
 
-htpp.paths <- c(list.files(paste0(local.data.path, "2_sampled_data/htpp/2_reps/"), full.names = TRUE),
-                list.files(paste0(local.data.path, "2_sampled_data/htpp/3_reps/"), full.names = TRUE))
-htpp.nms <- c(list.files(paste0(local.data.path, "2_sampled_data/htpp/2_reps/"), full.names = FALSE),
-              list.files(paste0(local.data.path, "2_sampled_data/htpp/3_reps/"), full.names = FALSE))
+htpp.paths <- c(list.files(paste0(data.path, "2_sampled_data/htpp/2_reps/"), full.names = TRUE),
+                list.files(paste0(data.path, "2_sampled_data/htpp/3_reps/"), full.names = TRUE))
+htpp.nms <- c(list.files(paste0(data.path, "2_sampled_data/htpp/2_reps/"), full.names = FALSE),
+              list.files(paste0(data.path, "2_sampled_data/htpp/3_reps/"), full.names = FALSE))
 htpp.nms <- gsub(".parquet", "", htpp.nms)
 
 
 #### Get feature filters #####
 
 ## Read in WTT results from BMDExpress
-wt.paths <- list.files(paste0(local.data.path, "2c_WTT_results"), full.names = TRUE)
+wt.paths <- list.files(paste0(data.path, "2c_WTT_results"), full.names = TRUE)
 httr.wt.filter <- data.frame()
 for(i in c(1:length(wt.paths))){
   wt <- read.table(wt.paths[i], 
@@ -100,9 +100,9 @@ s1500 <- read.csv("/Users/jessicaewald/Desktop/OASIS/analysis/POD_subsampling/da
 s1500.probes <- unique(s1500$PROBE_NAME)
 
 # save ANOVA, WTT filter results
-write_parquet(httr.wt.filter, paste0(local.data.path, "3_filtered_features/httr_wtt_filter.parquet"))
-write_parquet(httr.aov.filter, paste0(local.data.path, "3_filtered_features/httr_aov_filter.parquet"))
-write_parquet(htpp.aov.filter, paste0(local.data.path, "3_filtered_features/htpp_aov_filter.parquet"))
+write_parquet(httr.wt.filter, paste0(data.path, "3_filtered_features/httr_wtt_filter.parquet"))
+write_parquet(httr.aov.filter, paste0(data.path, "3_filtered_features/httr_aov_filter.parquet"))
+write_parquet(htpp.aov.filter, paste0(data.path, "3_filtered_features/htpp_aov_filter.parquet"))
 
 
 #### Perform curve fitting for features in any list ####
@@ -143,7 +143,7 @@ for(i in c(1:length(httr.paths))){
   httr.bmd.res <- rbind(httr.bmd.res, bmds)
   
 }
-write_parquet(httr.bmd.res, paste0(local.data.path, "4_bmd_results/httr_bmd_all.parquet"))
+write_parquet(httr.bmd.res, paste0(data.path, "4_bmd_results/httr_bmd_all.parquet"))
 
 htpp.bmd.res <- data.frame()
 for(i in c(1:length(htpp.paths))){
@@ -175,7 +175,7 @@ for(i in c(1:length(htpp.paths))){
   bmds$analysisID <- analysisID
   htpp.bmd.res <- rbind(htpp.bmd.res, bmds)
 }
-write_parquet(htpp.bmd.res, paste0(local.data.path, "4_bmd_results/htpp_bmd_all.parquet"))
+write_parquet(htpp.bmd.res, paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"))
 
 
 #### Split up BMD results and save ####
@@ -206,9 +206,9 @@ for(i in c(1:length(htpp.nms))){
   htpp.bmd.aov <- rbind(htpp.bmd.aov, temp)
 }
 
-write_parquet(httr.bmd.nomic, paste0(local.data.path, "4_bmd_results/httr_bmd_nomic.parquet"))
-write_parquet(httr.bmd.s1500, paste0(local.data.path, "4_bmd_results/httr_bmd_s1500.parquet"))
-write_parquet(httr.bmd.aov, paste0(local.data.path, "4_bmd_results/httr_bmd_aov.parquet"))
-write_parquet(httr.bmd.wtt, paste0(local.data.path, "4_bmd_results/httr_bmd_wtt.parquet"))
-write_parquet(htpp.bmd.aov, paste0(local.data.path, "4_bmd_results/htpp_bmd_aov.parquet"))
+write_parquet(httr.bmd.nomic, paste0(data.path, "4_bmd_results/httr_bmd_nomic.parquet"))
+write_parquet(httr.bmd.s1500, paste0(data.path, "4_bmd_results/httr_bmd_s1500.parquet"))
+write_parquet(httr.bmd.aov, paste0(data.path, "4_bmd_results/httr_bmd_aov.parquet"))
+write_parquet(httr.bmd.wtt, paste0(data.path, "4_bmd_results/httr_bmd_wtt.parquet"))
+write_parquet(htpp.bmd.aov, paste0(data.path, "4_bmd_results/htpp_bmd_aov.parquet"))
 
