@@ -781,3 +781,18 @@ lcrdPOD <- function(bmds){ ## need to turn this into the actual function
 }
 
 
+#### Compute percentile-based POD ####
+centilePOD <- function(bmds, centile){
+  
+  # check inputs
+  stopifnot("The 'centile' parameter must be a number between 0 and 1." =
+              (is.numeric(centile) & centile >= 0 & centile <= 1))
+  
+  stopifnot("The 'bmds' input must be a numeric vector with length > 1." =
+              (is.numeric(bmds) & length(bmds) > 1))
+  
+  # compute pod
+  cent.pod <- unname(quantile(bmds, c(centile)))
+  
+  return(cent.pod)
+}

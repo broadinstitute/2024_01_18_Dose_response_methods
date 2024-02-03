@@ -143,7 +143,6 @@ for(i in c(1:length(httr.paths))){
   httr.bmd.res <- rbind(httr.bmd.res, bmds)
   
 }
-write_parquet(httr.bmd.res, paste0(data.path, "4_bmd_results/httr_bmd_all.parquet"))
 
 htpp.bmd.res <- data.frame()
 for(i in c(1:length(htpp.paths))){
@@ -175,7 +174,6 @@ for(i in c(1:length(htpp.paths))){
   bmds$analysisID <- analysisID
   htpp.bmd.res <- rbind(htpp.bmd.res, bmds)
 }
-write_parquet(htpp.bmd.res, paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"))
 
 
 #### Split up BMD results and save ####
@@ -206,9 +204,13 @@ for(i in c(1:length(htpp.nms))){
   htpp.bmd.aov <- rbind(htpp.bmd.aov, temp)
 }
 
+# write out all sets of BMD results
+write_parquet(httr.bmd.res, paste0(data.path, "4_bmd_results/httr_bmd_all.parquet"))
 write_parquet(httr.bmd.nomic, paste0(data.path, "4_bmd_results/httr_bmd_nomic.parquet"))
 write_parquet(httr.bmd.s1500, paste0(data.path, "4_bmd_results/httr_bmd_s1500.parquet"))
 write_parquet(httr.bmd.aov, paste0(data.path, "4_bmd_results/httr_bmd_aov.parquet"))
 write_parquet(httr.bmd.wtt, paste0(data.path, "4_bmd_results/httr_bmd_wtt.parquet"))
+
+write_parquet(htpp.bmd.res, paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"))
 write_parquet(htpp.bmd.aov, paste0(data.path, "4_bmd_results/htpp_bmd_aov.parquet"))
 
