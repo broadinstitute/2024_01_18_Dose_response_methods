@@ -43,12 +43,32 @@ ggplot(x0, aes(x = PC1, y = PC2, color = dose)) +
 
 
 # Check with full httr matrix
-httr <- read_parquet("/Users/jessicaewald/NetbeansProjects/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/1_orig_data/httr_counts.parquet") %>% as.data.frame()
-meta <- read_parquet("/Users/jessicaewald/NetbeansProjects/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/1_orig_data/httr_key.parquet") %>% as.data.frame()
+httr <- read_parquet("./2024_01_18_Dose_response_methods-data/data/1_orig_data/httr_counts.parquet") %>% as.data.frame()
+meta <- read_parquet("./2024_01_18_Dose_response_methods-data/data/1_orig_data/httr_key.parquet") %>% as.data.frame()
 
 rownames(httr) <- httr$probe_id
 httr <- httr[,-1]
 httr <- as.matrix(httr)
+
+# add register to meta
+reg.let.1 <- c("A", "C", "E", "G", "I", "K", "M", "O")
+reg.let.2 <- c("B", "D", "F", "H", "J", "L", "N", "P")
+
+reg.num.1 <- c("01", "03", "05", "07", "09", "11", "13", "15", "17", "19", "21", "23")
+reg.num.2 <- c("02", "04", "06", "08", "10", "12", "14", "16", "18", "20", "22", "24")
+
+reg1 <- lapply(reg.let.1, function(x){paste0(x, reg.num.1)}) %>% unlist()
+reg2 <- lapply(reg.let.1, function(x){paste0(x, reg.num.2)}) %>% unlist()
+reg3 <- lapply(reg.let.2, function(x){paste0(x, reg.num.1)}) %>% unlist()
+reg4 <- lapply(reg.let.2, function(x){paste0(x, reg.num.2)}) %>% unlist()
+
+meta$register = NA
+meta$register[meta$well_id %in% reg1] <- "reg1"
+meta$register[meta$well_id %in% reg2] <- "reg2"
+meta$register[meta$well_id %in% reg3] <- "reg3"
+meta$register[meta$well_id %in% reg4] <- "reg4"
+
+meta$reg_plate <- paste0(meta$plate_id, "_", meta$register)
 
 httr <- httr[,colnames(httr) %in% meta$sample_id[meta$qc_flag == "OK"]]
 meta <- meta[meta$qc_flag == "OK", ]
@@ -74,6 +94,20 @@ ggplot(x[x$stype == "test sample", ], aes(x = PC1, y = PC2, color = chem_name)) 
   geom_point() +
   theme_bw()
 
+ggplot(x, aes(x = PC1, y = PC2, color = register)) +
+  geom_point() +
+  theme_bw() +
+  ggtitle("Transcriptomics data")
+
+ggplot(x, aes(x = PC1, y = PC2, color = plate_id)) +
+  geom_point() +
+  theme_bw() +
+  ggtitle("Transcriptomics data")
+
+ggplot(x, aes(x = PC1, y = PC2, color = reg_plate)) +
+  geom_point() +
+  theme_bw() +
+  ggtitle("Transcriptomics data")
 
 # Check out htpp data
 htpp <- read_parquet("/Users/jessicaewald/NetbeansProjects/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/1_orig_data/htpp_well_norm.parquet") %>% as.data.frame()

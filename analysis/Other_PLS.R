@@ -29,6 +29,9 @@ dose <- dose[match(rownames(df), dose$sample_id), ]
 res <- mdatools::pls(df, dose$rank, 10, cv = list("ven", 3), scale = T)
 plot(res)
 
+# this is for computing only a simple PLS
+res <- mdatools::pls.simpls(x, y, ncomp, cv = FALSE)
+
 # extract loadings
 # xload <- res$xloadings
 

@@ -73,7 +73,7 @@ names(httr_lcpm) <- chems
 
 # next, we need to sub-sample to create multiple matrices per chemical and per replicate number
 # sample with replacement when less than 3 per group after removing QC fails, keep all ctrls
-
+set.seed(123)
 for(i in c(1:length(chems))){
   chem <- chems[i]
   conc <- httr_lcpm[[chem]]$conc
@@ -95,13 +95,15 @@ for(i in c(1:length(chems))){
     # write out as parquet
     temp.lcpm <- rbind(temp.conc, temp.lcpm)
     rownames(temp.lcpm)[1] <- "Dose"
+    temp.lcpm <- as.data.frame(temp.lcpm)
     temp.lcpm <- cbind(rownames(temp.lcpm), temp.lcpm)
     colnames(temp.lcpm)[1] <- "probe_id"
     write_parquet(temp.lcpm, 
-                  paste0(data.path, "2_sampled_data/httr/2_reps/", chem, "_2reps_", k, ".parquet"))
+                  paste0(data.path, "2_sampled_data/httr/2_reps/", chem, "_2reps_", k, "_httr.parquet"))
     
     # write out in BMDExpress format for WTT
-    write.table(temp.lcpm, paste0(data.path, "2b_BMDExpress_input/", chem, "_2reps_", k, ".txt"), sep="\t", col.names = NA)
+    write.table(temp.lcpm, paste0(data.path, "2b_BMDExpress_input/httr/2reps/", chem, "_2reps_", k, "_httr.txt"), 
+                sep="\t", row.names = FALSE)
   }
   
   # create for 3 reps
@@ -120,20 +122,25 @@ for(i in c(1:length(chems))){
     # write out as parquet
     temp.lcpm <- rbind(temp.conc, temp.lcpm)
     rownames(temp.lcpm)[1] <- "Dose"
+    temp.lcpm <- as.data.frame(temp.lcpm)
     temp.lcpm <- cbind(rownames(temp.lcpm), temp.lcpm)
     colnames(temp.lcpm)[1] <- "probe_id"
     write_parquet(temp.lcpm, 
-                  paste0(data.path, "2_sampled_data/httr/3_reps/", chem, "_3reps_", k, ".parquet"))
+                  paste0(data.path, "2_sampled_data/httr/3_reps/", chem, "_3reps_", k, "_httr.parquet"))
     
     # write out in BMDExpress format for WTT
-    write.table(temp.lcpm, paste0(data.path, "2b_BMDExpress_input/", chem, "_3reps_", k, ".txt"), sep="\t", col.names = NA)
+    write.table(temp.lcpm, paste0(data.path, "2b_BMDExpress_input/httr/3reps/", chem, "_3reps_", k, "_httr.txt"), 
+                sep="\t", row.names = FALSE)
   }
+  
+  print(paste0("Finished sampling transcriptomics for ", chems[i]))
 }
 
 
 #### Process Cell Painting data ####
 # next, separate into a separate matrix for each chemical
 htpp_well_norm$conc[is.na(htpp_well_norm$conc)] <- 0
+htpp_well_norm <- htpp_well_norm[htpp_well_norm$plate_id == "TC00000483", ]
 htpp_mats <- list()
 
 for(i in c(1:length(chems))){
@@ -158,7 +165,7 @@ names(htpp_mats) <- chems
 
 
 #### Sub-sample Cell Painting data ####
-
+set.seed(123)
 for(i in c(1:length(chems))){
   chem <- chems[i]
   conc <- htpp_mats[[chem]]$conc
@@ -180,10 +187,15 @@ for(i in c(1:length(chems))){
     # write out as parquet
     temp.dat <- rbind(temp.conc, temp.dat)
     rownames(temp.dat)[1] <- "Dose"
+    temp.dat <- as.data.frame(temp.dat)
     temp.dat <- cbind(rownames(temp.dat), temp.dat)
     colnames(temp.dat)[1] <- "probe_id"
     write_parquet(temp.dat, 
                   paste0(data.path, "2_sampled_data/htpp/2_reps/", chem, "_2reps_", k, "_htpp.parquet"))
+    
+    # write out in BMDExpress format for WTT
+    write.table(temp.dat, paste0(data.path, "2b_BMDExpress_input/htpp/2reps/", chem, "_2reps_", k, "_htpp.txt"), 
+                sep="\t", row.names = FALSE)
     
   }
   
@@ -203,10 +215,17 @@ for(i in c(1:length(chems))){
     # write out as parquet
     temp.dat <- rbind(temp.conc, temp.dat)
     rownames(temp.dat)[1] <- "Dose"
+    temp.dat <- as.data.frame(temp.dat)
     temp.dat <- cbind(rownames(temp.dat), temp.dat)
     colnames(temp.dat)[1] <- "probe_id"
     write_parquet(temp.dat, 
                   paste0(data.path, "2_sampled_data/htpp/3_reps/", chem, "_3reps_", k, "_htpp.parquet"))
+    
+    # write out in BMDExpress format for WTT
+    write.table(temp.dat, paste0(data.path, "2b_BMDExpress_input/htpp/3reps/", chem, "_3reps_", k, "_htpp.txt"), 
+                sep="\t", row.names = FALSE)
   }
+  
+  print(paste0("Finished sampling Cell Painting for ", chems[i]))
 }
 

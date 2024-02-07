@@ -46,5 +46,7 @@ computeMahalanobisDistance <- function(dat, RotationMatrix, invCov, treatment, c
   
   # compute the Mahalanobis distance
   D = apply(Delta, 1, function(x) (x %*% invCov %*% x) %>% sqrt() %>% round(., 3))
+  
+  return(D)
 
 }
