@@ -505,8 +505,20 @@ PerformBMDCalc <- function(fitObj, ncpus = 1, num.sds = 1, sample.mean = TRUE)
   
   # get only correct rows
   inx.bmd <- rownames(data) %in% as.character(dfitall$gene.id)
-  data <- data[inx.bmd, ]
-  data.mean <- data.mean[inx.bmd, ]
+  if(sum(inx.bmd) == 1){
+    data.temp <- matrix(data[inx.bmd,], nrow = 1)
+    colnames(data.temp) <- colnames(data)
+    rownames(data.temp) <- rownames(data)[inx.bmd]
+    data <- data.temp
+    
+    data.mean.temp <- matrix(data.mean[inx.bmd, ], nrow = 1)
+    colnames(data.mean.temp) <- colnames(data.mean)
+    rownames(data.mean.temp) <- rownames(data.mean)[inx.bmd]
+    data.mean <- data.mean.temp
+  } else {
+    data <- data[inx.bmd, ]
+    data.mean <- data.mean[inx.bmd, ]
+  }
   
   item <- fitObj$fitres.filt[,1]
   fitres.bmd <- fitObj$fitres.filt
@@ -798,7 +810,39 @@ centilePOD <- function(bmds, centile){
 }
 
 
+#### Compute gene set POD
+gsPOD <- function(gs.lib, universe, bmd.list) {
+  # gs.lib is a list of gene sets
+  # universe are all measured gene IDs
+  # bmd.list is a named list of gene-level benchmark doses, with gene IDs as names
+  # The gene IDs for all three must be the same type (ie. Entrez ID)
+  
+  require(fgsea)
+  
+  # hypergeometic test
+  results <- fora(gs.lib, names(bmd.list), universe, minSize = 10, maxSize = 500) %>% suppressWarnings()
+  results <- results[(size >= 3) & (overlap/size >= 0.05)]
+  
+  if(dim(results)[1] > 0) {
+    # get BMDs from each enriched gene set
+    pw.bmds <- lapply(results$overlapGenes, function(x){bmd.list[unlist(x)]})
+    names(pw.bmds) <- results$pathway
+    
+    # median BMD for each gene set
+    bmd.med <- lapply(pw.bmds, median)
+    results$bmd.med <- unlist(bmd.med)
+    
+    # pathway POD is lowest median BMD that passes all criteria
+    return(min(results$bmd.med))
+  } else {
+    return(NA)
+  }
+}
+
+
+
 #### Compute global Mahalanobis distance ####
+
 prepMahalanobisDistances <- function(dat, coverVariance, treatment){
   # dat should be a matrix with samples in rows and features in columns
   # coverVariance is the percentage of variance that the retained PCs should cover
@@ -828,7 +872,7 @@ prepMahalanobisDistances <- function(dat, coverVariance, treatment){
   return(list(RotationMatrix = RotationMatrix, invCov = invCov))
 }
 
-computeMahalanobisDistance <- function(dat, RotationMatrix, invCov, treatment, controlID, dose){
+computeMahalanobisDistance <- function(dat, RotationMatrix, invCov, treatment, controlID){
   # dat should be a matrix with samples in rows and features in columns
   # RotationMatrix are the PC loadings for the number of PCs that explain coverVariance amount of variability
   # invCov is the inverse covariance matrix computed from the PCs ~ treatment model
@@ -851,23 +895,40 @@ computeMahalanobisDistance <- function(dat, RotationMatrix, invCov, treatment, c
   
 }
 
+#### Compute PLS-DA scores ####
+computePLS <- function(dat, dose, ncomp){
+  require(mdatools)
+  require(dplyr)
+  
+  pls.res <- suppressWarnings(mdatools::plsda(dat, as.character(dose), ncomp = ncomp, cv = NULL, scale = T))
+  
+  # extract loadings
+  xload <- pls.res$xloadings %>% as.data.frame()
+  
+  # extract scores and shift above zero
+  comps <- pls.res$res$cal$xdecomp
+  xscores <- comps$scores
+  xscores <- t(xscores)
+  xscores <- xscores + abs(min(xscores))*1.05 # shift above zero
+  
+  # extract variance explained
+  varexp <- comps$expvar
+  
+  return(list(scores = xscores, loadings = xload, varExp = varexp))
+}
 
 #### Compute POD from dim reduction scores
 scoresPOD <- function(dat, dose) {
   
   models = c("Exp2","Exp3","Exp4","Exp5","Poly2","Lin","Power","Hill")
   
-  curve.res <- PerformCurveFitting(data = matrix(D, nrow = 1), dose = dose, ncpus = 1, models = models)
+  curve.res <- PerformCurveFitting(data = dat, dose = dose, ncpus = 1, models = models)
   curve.res <- FilterDRFit(curve.res, lof.pval = 0)
   
   bmds <- PerformBMDCalc(curve.res, ncpus = 1, num.sds = 1, sample.mean = TRUE)
   
   return(bmds)
 }
-
-
-
-
 
 
 

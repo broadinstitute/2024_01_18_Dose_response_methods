@@ -33,22 +33,23 @@ htpp.nms <- gsub(".parquet", "", htpp.nms)
 #### Get feature filters #####
 
 ## Read in WTT results from BMDExpress
-wt.paths <- list.files(paste0(data.path, "2c_WTT_results"), full.names = TRUE)
-httr.wt.filter <- data.frame()
-for(i in c(1:length(wt.paths))){
-  wt <- read.table(wt.paths[i], 
-                   sep="\t", fill = TRUE)
-  wt <- wt[,c(1,2,5,7)]
-  colnames(wt) <- c("analysis", "probe", "pval")
-  wt <- wt[-1,]
-  wt$pval <- as.numeric(wt$pval)
-  wt$maxFC <- as.numeric(wt$maxFC)
-  wt$analysisID <- gsub("_williams.*", "", wt$analysis)
-  
-  httr.wt.filter <- rbind(httr.wt.filter, wt)
+process_wtt <- function(wtt.path){
+  wtt <- read.table(wtt.path, sep="\t", fill = TRUE, header = TRUE)
+  colnames(wtt) <- c("analysis", "probe", "pval", "fdr", "max_fc")
+  wtt$analysisID <- gsub("_ht.*", "", wtt$analysis)
+  return(wtt)
 }
-httr.wt.filter <- httr.wt.filter[,c("probe", "pval", "analysisID")]
+httr.wtt.filter.2 <- process_wtt(paste0(data.path, "2c_WTT_results/processed/httr_2reps_wtt.txt"))
+httr.wtt.filter.3 <- process_wtt(paste0(data.path, "2c_WTT_results/processed/httr_3reps_wtt.txt"))
+httr.wtt.filter <- rbind(httr.wtt.filter.2, httr.wtt.filter.3)
 
+htpp.wtt.filter.2 <- process_wtt(paste0(data.path, "2c_WTT_results/processed/htpp_2reps_wtt.txt"))
+htpp.wtt.filter.3 <- process_wtt(paste0(data.path, "2c_WTT_results/processed/htpp_3reps_wtt.txt"))
+htpp.wtt.filter <- rbind(htpp.wtt.filter.2, htpp.wtt.filter.3)
+
+# write out results to parquet
+write_parquet(httr.wtt.filter, paste0(data.path, "3_filtered_features/httr_wtt_filter.parquet"))
+write_parquet(htpp.wtt.filter, paste0(data.path, "3_filtered_features/htpp_wtt_filter.parquet"))
 
 ## Create ANOVA filter lists for httr and htpp
 httr.aov.filter <- data.frame()
@@ -87,29 +88,27 @@ for(i in c(1:length(htpp.paths))){
   htpp.aov.filter <- rbind(htpp.aov.filter, aov.df)
 }
 
+# save ANOVA filter results
+write_parquet(httr.aov.filter, paste0(data.path, "3_filtered_features/httr_aov_filter.parquet"))
+write_parquet(htpp.aov.filter, paste0(data.path, "3_filtered_features/htpp_aov_filter.parquet"))
+
 
 ## Read in Nomic IDs and convert to httr probe IDs
-httr.probes <- read.csv("/Users/jessicaewald/Desktop/OASIS/analysis/POD_subsampling/data/probemaps/100739_homo_sapiens_wt_probemap.csv")
-nomic <- read.csv("/Users/jessicaewald/Desktop/OASIS/analysis/POD_subsampling/data/probemaps/Nomic_probes_S1500_jan2024.csv")
+httr.probes <- read.csv(paste0(data.path, "probemaps/100739_homo_sapiens_wt_probemap.csv"))
+nomic <- read.csv(paste0(data.path, "probemaps/Nomic_probes_S1500_jan2024.csv"))
 nomic <- nomic[nomic$Status != "On roadmap", ]
 nomic <- merge(nomic, httr.probes, by = "ENTREZ_ID", all = FALSE)
 nomic.probes <- unique(nomic$PROBE_NAME)
 
 ## Read in S1500 probes
-s1500 <- read.csv("/Users/jessicaewald/Desktop/OASIS/analysis/POD_subsampling/data/probemaps/100766_homo_sapiens_s1500_probemap.csv")
+s1500 <- read.csv(paste0(data.path, "probemaps/100766_homo_sapiens_s1500_probemap.csv"))
 s1500.probes <- unique(s1500$PROBE_NAME)
-
-# save ANOVA, WTT filter results
-write_parquet(httr.wt.filter, paste0(data.path, "3_filtered_features/httr_wtt_filter.parquet"))
-write_parquet(httr.aov.filter, paste0(data.path, "3_filtered_features/httr_aov_filter.parquet"))
-write_parquet(htpp.aov.filter, paste0(data.path, "3_filtered_features/htpp_aov_filter.parquet"))
-
 
 #### Perform curve fitting for features in any list ####
 
 # perform DR analysis for each dataset
 models = c("Exp2","Exp3","Exp4","Exp5","Poly2","Lin","Power","Hill")
-ncpus = 6
+ncpus = 8
 
 httr.bmd.res <- data.frame()
 for(i in c(1:length(httr.paths))){
@@ -117,7 +116,7 @@ for(i in c(1:length(httr.paths))){
   print(analysisID)
   
   # get all IDs
-  all.ids <- c(httr.wt.filter$probe[httr.wt.filter$analysisID == analysisID], 
+  all.ids <- c(httr.wtt.filter$probe[httr.wtt.filter$analysisID == analysisID], 
                httr.aov.filter$probe[httr.aov.filter$analysisID == analysisID],
                nomic.probes, s1500.probes) %>% unique()
   
@@ -133,7 +132,7 @@ for(i in c(1:length(httr.paths))){
   
   # perform curve fitting
   res <- PerformCurveFitting(data = lcpm, dose = conc, ncpus = ncpus, models = models)
-  res <- FilterDRFit(res, lof.pval = 0.1)
+  res <- FilterDRFit(res, lof.pval = 0)
   print("fitting done!")
   
   # perform benchmark dose calculation
@@ -146,7 +145,7 @@ for(i in c(1:length(httr.paths))){
 
 htpp.bmd.res <- data.frame()
 for(i in c(1:length(htpp.paths))){
-  analysisID <- httr.nms[i]
+  analysisID <- htpp.nms[i]
   print(analysisID)
   
   # read in and process httr data
@@ -165,7 +164,7 @@ for(i in c(1:length(htpp.paths))){
   
   # perform curve fitting
   res <- PerformCurveFitting(data = dat, dose = conc, ncpus = ncpus, models = models)
-  res <- FilterDRFit(res, lof.pval = 0.1)
+  res <- FilterDRFit(res, lof.pval = 0)
   print("fitting done!")
   
   # perform benchmark dose calculation
@@ -186,7 +185,7 @@ httr.bmd.aov <- data.frame()
 httr.bmd.wtt <- data.frame()
 for(i in c(1:length(httr.nms))){
   probes.aov <- httr.aov.filter$probe[httr.aov.filter$analysisID == httr.nms[i]]
-  probes.wtt <- httr.wt.filter$probe[httr.wt.filter$analysisID == httr.nms[i]]
+  probes.wtt <- httr.wtt.filter$probe[httr.wtt.filter$analysisID == httr.nms[i]]
   
   temp <- httr.bmd.res[httr.bmd.res$analysisID == httr.nms[i], ]
   
@@ -195,13 +194,15 @@ for(i in c(1:length(httr.nms))){
 }
 
 htpp.bmd.aov <- data.frame()
+htpp.bmd.wtt <- data.frame()
 for(i in c(1:length(htpp.nms))){
-  print(i)
   probes.aov <- htpp.aov.filter$probe[htpp.aov.filter$analysisID == htpp.nms[i]]
+  probes.wtt <- htpp.wtt.filter$probe[htpp.wtt.filter$analysisID == htpp.nms[i]]
   
-  temp <- htpp.bmd.res[htpp.bmd.res$analysisID == htpp.nms[i] & htpp.bmd.res$gene.id %in% probes.aov, ]
+  temp <- htpp.bmd.res[htpp.bmd.res$analysisID == htpp.nms[i], ]
   
-  htpp.bmd.aov <- rbind(htpp.bmd.aov, temp)
+  htpp.bmd.aov <- rbind(htpp.bmd.aov, temp[temp$gene.id %in% probes.aov, ])
+  htpp.bmd.wtt <- rbind(htpp.bmd.wtt, temp[temp$gene.id %in% probes.wtt, ])
 }
 
 # write out all sets of BMD results
@@ -213,4 +214,4 @@ write_parquet(httr.bmd.wtt, paste0(data.path, "4_bmd_results/httr_bmd_wtt.parque
 
 write_parquet(htpp.bmd.res, paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"))
 write_parquet(htpp.bmd.aov, paste0(data.path, "4_bmd_results/htpp_bmd_aov.parquet"))
-
+write_parquet(htpp.bmd.wtt, paste0(data.path, "4_bmd_results/htpp_bmd_wtt.parquet"))
