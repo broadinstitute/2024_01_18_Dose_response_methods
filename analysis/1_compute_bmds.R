@@ -36,7 +36,7 @@ htpp.nms <- gsub(".parquet", "", htpp.nms)
 process_wtt <- function(wtt.path){
   wtt <- read.table(wtt.path, sep="\t", fill = TRUE, header = TRUE)
   colnames(wtt) <- c("analysis", "probe", "pval", "fdr", "max_fc")
-  wtt$analysisID <- gsub("_ht.*", "", wtt$analysis)
+  wtt$analysisID <- gsub("_williams.*", "", wtt$analysis)
   return(wtt)
 }
 httr.wtt.filter.2 <- process_wtt(paste0(data.path, "2c_WTT_results/processed/httr_2reps_wtt.txt"))
@@ -215,3 +215,14 @@ write_parquet(httr.bmd.wtt, paste0(data.path, "4_bmd_results/httr_bmd_wtt.parque
 write_parquet(htpp.bmd.res, paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"))
 write_parquet(htpp.bmd.aov, paste0(data.path, "4_bmd_results/htpp_bmd_aov.parquet"))
 write_parquet(htpp.bmd.wtt, paste0(data.path, "4_bmd_results/htpp_bmd_wtt.parquet"))
+
+
+# fix wtt results
+httr.bmds <- read_parquet(paste0(data.path, "4_bmd_results/httr_bmd_all.parquet"))
+htpp.bmds <- read_parquet(paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"))
+
+httr.wtt <- read_parquet(paste0(data.path, "3_filtered_features/httr_wtt_filter.parquet"))
+htpp.wtt <- read_parquet(paste0(data.path, "3_filtered_features/htpp_wtt_filter.parquet"))
+
+
+
