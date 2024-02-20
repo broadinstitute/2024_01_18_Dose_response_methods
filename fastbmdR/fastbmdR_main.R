@@ -811,7 +811,7 @@ centilePOD <- function(bmds, centile){
 
 
 #### Compute gene set POD
-gsPOD <- function(gs.lib, universe, bmd.list) {
+gsPOD <- function(gs.lib, universe, bmd.list, overlap_number, overlap_percent) {
   # gs.lib is a list of gene sets
   # universe are all measured gene IDs
   # bmd.list is a named list of gene-level benchmark doses, with gene IDs as names
@@ -820,8 +820,8 @@ gsPOD <- function(gs.lib, universe, bmd.list) {
   require(fgsea)
   
   # hypergeometic test
-  results <- fora(gs.lib, names(bmd.list), universe, minSize = 10, maxSize = 500) %>% suppressWarnings()
-  results <- results[(size >= 3) & (overlap/size >= 0.05)]
+  results <- fora(gs.lib, names(bmd.list), universe) %>% suppressWarnings()
+  results <- results[(size >= overlap_number) & (overlap/size >= overlap_percent)]
   
   if(dim(results)[1] > 0) {
     # get BMDs from each enriched gene set
@@ -840,6 +840,24 @@ gsPOD <- function(gs.lib, universe, bmd.list) {
 }
 
 
+rsPOD <- function(universe, bmd.list, n.iter){
+  # set size = 1% size of universe
+  # number sets = 1000
+  # overlap must be > 5%
+
+  res = replicate(n.iter, gsPOD(
+    gs.lib = replicate(1000, sample(universe, ceiling(0.01*length(universe)), replace = F)) %>% as.data.frame() %>% as.list(),
+    universe = universe,
+    bmd.list = bmd.list,
+    overlap_number = 0,
+    overlap_percent = 0.05
+  ))
+  res.ci <- quantile(res, c(0.025, 0.975), na.rm = TRUE)
+  res.ci <- c(POD = median(res, na.rm = T), res.ci, na_percent = signif(sum(is.na(res)/n.iter), 2))
+  
+  return(res.ci)
+
+}
 
 #### Compute global Mahalanobis distance ####
 
