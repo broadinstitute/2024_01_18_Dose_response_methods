@@ -31,14 +31,24 @@ names(bmd.paths) <- c("httr_aov", "httr_wtt", "httr_s1500", "httr_nomic", "htpp_
 feature.set <- c("ANOVA", "WTT", "S1500", "Nomic", "All", "ANOVA", "WTT")
 
 # get gene set info
-probe.map <- read.csv("/Users/jessicaewald/NetbeansProjects/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/probemaps/100739_homo_sapiens_wt_probemap.csv")
-universe <- probe.map$PROBE_NAME %>% unique()
-gs.list <- readRDS("/Users/jessicaewald/NetbeansProjects/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/gs_libraries/go_bp.rds")[["sets"]]
+gs.list <- readRDS("../2024_01_18_Dose_response_methods-data/data/gs_libraries/go_bp.rds")[["sets"]]
+probe.map <- read.csv("../2024_01_18_Dose_response_methods-data/data/probemaps/100739_homo_sapiens_wt_probemap.csv")
+universe.httr <- probe.map$PROBE_NAME %>% unique()
+
+s1500.map <- read.csv("../2024_01_18_Dose_response_methods-data/data/probemaps/100766_homo_sapiens_s1500_probemap.csv")
+universe.s1500 <- s1500.map$PROBE_NAME
+
+nomic.map <- read.csv("../2024_01_18_Dose_response_methods-data/data/probemaps/Nomic_probes_S1500_jan2024.csv")
+nomic.map <- nomic.map[nomic.map$Status != "On roadmap", ]
+nomic.map <- merge(nomic.map, probe.map, by = "ENTREZ_ID", all = FALSE)
+universe.nomic <- unique(nomic.map$PROBE_NAME)
+
+universe.htpp <- read_parquet("../2024_01_18_Dose_response_methods-data/data/2_sampled_data/htpp/3_reps/Actinomycin D_3reps_1_htpp.parquet")$probe_id[-1]
 
 #### Compute univariate tPODs ####
 
 tpod.res <- data.frame()
-for(i in c(1:length(bmd.paths))){
+for(i in c(5:length(bmd.paths))){
   bmds <- read_parquet(bmd.paths[i])
   print(bmd.paths[i])
   
@@ -56,6 +66,7 @@ for(i in c(1:length(bmd.paths))){
   info$POD_uni_mode <- NA
   info$POD_uni_lcrd <- NA
   info$POD_uni_gs <- NA
+  info$POD_uni_rs <- NA
   
   for(k in c(1:length(analysisIDs))) {
     print(analysisIDs[k])
@@ -73,20 +84,33 @@ for(i in c(1:length(bmd.paths))){
     info$POD_uni_centile[k] <- centilePOD(bmds.temp$bmd, 0.1)
     
     # compute mode
-    info$POD_uni_mode[k] <- modePOD(bmds.temp$bmd)
+    mode <- modePOD(log10(bmds.temp$bmd))
+    if(!is.na(mode)){
+      info$POD_uni_mode[k] <- 10^mode
+    } else {
+      info$POD_uni_mode[k] <- NA
+    }
     
     # compute lcrd
     info$POD_uni_lcrd[k] <- lcrdPOD(bmds.temp$bmd)
     
-    # compute pathway (go bp)
-    if(platform == "httr") {
-      gs.bmds <- bmds.temp$bmd
-      names(gs.bmds) <- bmds.temp$gene.id
-      info$POD_uni_gs[k] <- gsPOD(gs.list, universe, gs.bmds)
+    # compute gene set and random set POD
+    gs.bmds <- bmds.temp$bmd
+    names(gs.bmds) <- bmds.temp$gene.id
+    
+    if(feature.set[i] == "S1500"){
+      info$POD_uni_rs[k] <- rsPOD(universe.s1500, gs.bmds, 100)[1]
+      info$POD_uni_gs[k] <- gsPOD(gs.list, universe.s1500, gs.bmds, 3, 0.05)
+    } else if (feature.set[i] == "Nomic"){
+      info$POD_uni_rs[k] <- rsPOD(universe.nomic, gs.bmds, 100)[1]
+      info$POD_uni_gs[k] <- gsPOD(gs.list, universe.nomic, gs.bmds, 3, 0.05)
+    } else if(platform == "httr") {
+      info$POD_uni_rs[k] <- rsPOD(universe.httr, gs.bmds, 100)[1]
+      info$POD_uni_gs[k] <- gsPOD(gs.list, universe.httr, gs.bmds, 3, 0.05)
     } else {
+      info$POD_uni_rs[k] <- rsPOD(universe.htpp, gs.bmds, 100)[1]
       info$POD_uni_gs[k] <- NA
     }
-    
   }
   
   tpod.res <- rbind(tpod.res, info)
@@ -94,6 +118,70 @@ for(i in c(1:length(bmd.paths))){
 }
 write_parquet(tpod.res, paste0(data.path, "5_tpod_results/univar_tpods.parquet"))
 
+
+# HTTR ANOVA, HTTR WTT, HTPP All, HTPP ANOVA, HTPP WTT all fine (except for NAs - probably just a few NAs)
+# Don't need Nomic
+# Re-do S1500
+tpod.htpp <- read_parquet("/Users/jewald/repos/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/5_tpod_results/univar_tpods_htpp.parquet") %>% as.data.frame()
+tpod <- read_parquet("/Users/jewald/repos/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/5_tpod_results/univar_tpods.parquet") %>% as.data.frame()
+tpod <- tpod[tpod$Platform == "httr", ]
+
+tpod <- rbind(tpod, tpod.htpp)
+
+### wipe ones that didn't work
+tpod <- tpod[tpod$Features != "Nomic", ]
+tpod$POD_uni_gs[tpod$Features == "S1500"] <- NA
+tpod$POD_uni_rs[tpod$Features == "S1500"] <- NA
+
+## re-do - collect bmd.res into single df
+bmd.res <- read_parquet(bmd.paths["httr_aov"]) %>% as.data.frame()
+bmd.res$Features <- "ANOVA"
+
+bmd2 <- read_parquet(bmd.paths["httr_wtt"]) %>% as.data.frame()
+bmd2$Features <- "WTT"
+bmd.res <- rbind(bmd.res, bmd2)
+
+bmd2 <- read_parquet(bmd.paths["httr_s1500"]) %>% as.data.frame()
+bmd2$Features <- "S1500"
+bmd.res <- rbind(bmd.res, bmd2)
+
+bmd2 <- read_parquet(bmd.paths["htpp_all"]) %>% as.data.frame()
+bmd2$Features <- "All"
+bmd.res <- rbind(bmd.res, bmd2)
+
+bmd2 <- read_parquet(bmd.paths["htpp_aov"]) %>% as.data.frame()
+bmd2$Features <- "ANOVA"
+bmd.res <- rbind(bmd.res, bmd2)
+
+bmd2 <- read_parquet(bmd.paths["htpp_wtt"]) %>% as.data.frame()
+bmd2$Features <- "WTT"
+bmd.res <- rbind(bmd.res, bmd2)
+
+# go through tpod and fill in NAs for gs and rs PODs
+for(i in c(1:dim(tpod)[1])){
+  
+  if(tpod$Features[i] == "S1500"){
+    print(i)
+    bmds.temp <- bmd.res[bmd.res$analysisID == tpod$AnalysisID[i] & bmd.res$Features == "S1500", ]
+    gs.bmds <- bmds.temp$bmd
+    names(gs.bmds) <- bmds.temp$gene.id
+    
+    tpod$POD_uni_rs[i] <- rsPOD(universe.s1500, gs.bmds, 100)[1]
+    tpod$POD_uni_gs[i] <- gsPOD(gs.list, universe.s1500, gs.bmds, 3, 0.05)
+  } else if(is.na(tpod$POD_uni_rs[i])){
+    print(i)
+    bmds.temp <- bmd.res[bmd.res$analysisID == tpod$AnalysisID[i] & bmd.res$Features == tpod$Features[i], ]
+    gs.bmds <- bmds.temp$bmd
+    names(gs.bmds) <- bmds.temp$gene.id
+    
+    if(tpod$Platform[i] == "httr") {
+      tpod$POD_uni_rs[i] <- rsPOD(universe.httr, gs.bmds, 100)[1]
+    } else {
+      tpod$POD_uni_rs[i] <- rsPOD(universe.htpp, gs.bmds, 100)[1]
+    }
+  }
+}
+write_parquet(tpod, paste0(data.path, "5_tpod_results/univar_tpods.parquet"))
 
 #### Compute multivariate PODs ####
 
