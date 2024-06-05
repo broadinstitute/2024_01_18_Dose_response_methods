@@ -217,12 +217,28 @@ write_parquet(htpp.bmd.aov, paste0(data.path, "4_bmd_results/htpp_bmd_aov.parque
 write_parquet(htpp.bmd.wtt, paste0(data.path, "4_bmd_results/htpp_bmd_wtt.parquet"))
 
 
-# fix wtt results
-httr.bmds <- read_parquet(paste0(data.path, "4_bmd_results/httr_bmd_all.parquet"))
-htpp.bmds <- read_parquet(paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"))
-
-httr.wtt <- read_parquet(paste0(data.path, "3_filtered_features/httr_wtt_filter.parquet"))
-htpp.wtt <- read_parquet(paste0(data.path, "3_filtered_features/htpp_wtt_filter.parquet"))
 
 
+#### Add fold change analysis for only transcriptomics data
+fc.filter <- read_parquet(paste0(data.path, "3_filtered_features/httr_wtt_filter.parquet"))
+httr.bmd.res <- read_parquet(paste0(data.path, "4_bmd_results/httr_bmd_all.parquet"))
+
+fc.filter$max_fc_abs <- abs(fc.filter$max_fc)
+fc.filter$id <- paste0(fc.filter$probe, "_", fc.filter$analysisID)
+
+# fc: 1 (no filter), 2, 3, 4, 5
+
+write_parquet(httr.bmd.wtt, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc1.parquet"))
+
+httr.bmd.fc <- httr.bmd.res[paste0(httr.bmd.res$gene.id, "_", httr.bmd.res$analysisID) %in% fc.filter$id[fc.filter$max_fc_abs > 2], ]
+write_parquet(httr.bmd.fc, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc2.parquet"))
+
+httr.bmd.fc <- httr.bmd.res[paste0(httr.bmd.res$gene.id, "_", httr.bmd.res$analysisID) %in% fc.filter$id[fc.filter$max_fc_abs > 3], ]
+write_parquet(httr.bmd.fc, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc3.parquet"))
+
+httr.bmd.fc <- httr.bmd.res[paste0(httr.bmd.res$gene.id, "_", httr.bmd.res$analysisID) %in% fc.filter$id[fc.filter$max_fc_abs > 4], ]
+write_parquet(httr.bmd.fc, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc4.parquet"))
+
+httr.bmd.fc <- httr.bmd.res[paste0(httr.bmd.res$gene.id, "_", httr.bmd.res$analysisID) %in% fc.filter$id[fc.filter$max_fc_abs > 5], ]
+write_parquet(httr.bmd.fc, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc5.parquet"))
 
