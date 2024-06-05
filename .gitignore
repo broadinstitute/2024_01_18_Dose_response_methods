@@ -47,3 +47,8 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# DStore
+.DS_Store
+analysis/.DS_Store
+fastbmdR/.DS_Store

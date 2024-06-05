@@ -167,49 +167,49 @@ for(i in c(1:length(mat.paths))){
   rownames(mat) <- mat$probe_id
   mat <- mat[-1, -1] %>% t()
   
-  # # compute global mahalanobis (cov from all samples)
-  # if(platform == "httr"){
-  #   gmd.rot <- httr.gmd$RotationMatrix
-  #   gmd.cov <- httr.gmd$invCov
-  # } else {
-  #   mat <- mat[,!(colnames(mat) %in% c("f_1073", "f_1074"))]
-  #   gmd.rot <- htpp.gmd$RotationMatrix
-  #   gmd.cov <- htpp.gmd$invCov
-  # }
-  # 
-  # gmd.rot <- gmd.rot[rownames(gmd.rot) %in% colnames(mat),]
-  # gmd.mat <- mat[,colnames(mat) %in% rownames(gmd.rot)]
-  # gmd.mat <- gmd.mat[,match(rownames(gmd.rot), colnames(gmd.mat))]
-  # 
-  # gmd <- computeMahalanobisDistance(gmd.mat, gmd.rot, gmd.cov, as.character(dose), "0")
-  # gmd <- matrix(gmd, nrow = 1)
-  # rownames(gmd) <- "gmd"
-  # gmd.pod <- scoresPOD(gmd, dose)
-  # if(gmd.pod$all.pass){
-  #   tpods.multi$POD_multi_gmd[i] <- gmd.pod$bmd
-  #   tpods.multi$POD_multi_gmd_l[i] <- gmd.pod$bmdl
-  #   tpods.multi$POD_multi_gmd_u[i] <- gmd.pod$bmdu
-  # } else {
-  #   tpods.multi$POD_multi_gmd[i] <- NA
-  #   tpods.multi$POD_multi_gmd_l[i] <- NA
-  #   tpods.multi$POD_multi_gmd_u[i] <- NA
-  # }
-  # 
-  # # compute local mahalanobis (cov from dataset only)
-  # lmd.cov <- prepMahalanobisDistances(mat, 0.95, as.character(dose))
-  # lmd <- computeMahalanobisDistance(mat, lmd.cov$RotationMatrix, lmd.cov$invCov, as.character(dose), "0")
-  # lmd <- matrix(lmd, nrow = 1)
-  # rownames(lmd) <- "lmd"
-  # lmd.pod <- scoresPOD(lmd, dose)
-  # if(lmd.pod$all.pass){
-  #   tpods.multi$POD_multi_lmd[i] <- lmd.pod$bmd
-  #   tpods.multi$POD_multi_lmd_l[i] <- lmd.pod$bmdl
-  #   tpods.multi$POD_multi_lmd_u[i] <- lmd.pod$bmdu
-  # } else {
-  #   tpods.multi$POD_multi_lmd[i] <- NA
-  #   tpods.multi$POD_multi_lmd_l[i] <- NA
-  #   tpods.multi$POD_multi_lmd_u[i] <- NA
-  # }
+  # compute global mahalanobis (cov from all samples)
+  if(platform == "httr"){
+    gmd.rot <- httr.gmd$RotationMatrix
+    gmd.cov <- httr.gmd$invCov
+  } else {
+    mat <- mat[,!(colnames(mat) %in% c("f_1073", "f_1074"))]
+    gmd.rot <- htpp.gmd$RotationMatrix
+    gmd.cov <- htpp.gmd$invCov
+  }
+
+  gmd.rot <- gmd.rot[rownames(gmd.rot) %in% colnames(mat),]
+  gmd.mat <- mat[,colnames(mat) %in% rownames(gmd.rot)]
+  gmd.mat <- gmd.mat[,match(rownames(gmd.rot), colnames(gmd.mat))]
+
+  gmd <- computeMahalanobisDistance(gmd.mat, gmd.rot, gmd.cov, as.character(dose), "0")
+  gmd <- matrix(gmd, nrow = 1)
+  rownames(gmd) <- "gmd"
+  gmd.pod <- scoresPOD(gmd, dose)
+  if(gmd.pod$all.pass){
+    tpods.multi$POD_multi_gmd[i] <- gmd.pod$bmd
+    tpods.multi$POD_multi_gmd_l[i] <- gmd.pod$bmdl
+    tpods.multi$POD_multi_gmd_u[i] <- gmd.pod$bmdu
+  } else {
+    tpods.multi$POD_multi_gmd[i] <- NA
+    tpods.multi$POD_multi_gmd_l[i] <- NA
+    tpods.multi$POD_multi_gmd_u[i] <- NA
+  }
+
+  # compute local mahalanobis (cov from dataset only)
+  lmd.cov <- prepMahalanobisDistances(mat, 0.95, as.character(dose))
+  lmd <- computeMahalanobisDistance(mat, lmd.cov$RotationMatrix, lmd.cov$invCov, as.character(dose), "0")
+  lmd <- matrix(lmd, nrow = 1)
+  rownames(lmd) <- "lmd"
+  lmd.pod <- scoresPOD(lmd, dose)
+  if(lmd.pod$all.pass){
+    tpods.multi$POD_multi_lmd[i] <- lmd.pod$bmd
+    tpods.multi$POD_multi_lmd_l[i] <- lmd.pod$bmdl
+    tpods.multi$POD_multi_lmd_u[i] <- lmd.pod$bmdu
+  } else {
+    tpods.multi$POD_multi_lmd[i] <- NA
+    tpods.multi$POD_multi_lmd_l[i] <- NA
+    tpods.multi$POD_multi_lmd_u[i] <- NA
+  }
   
   # compute pls
   pls.comps <- computePLS(mat, as.character(dose), ncomp = 10)
