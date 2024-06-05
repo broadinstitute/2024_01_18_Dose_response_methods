@@ -228,7 +228,8 @@ fc.filter$id <- paste0(fc.filter$probe, "_", fc.filter$analysisID)
 
 # fc: 1 (no filter), 2, 3, 4, 5
 
-write_parquet(httr.bmd.wtt, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc1.parquet"))
+httr.bmd.fc <- httr.bmd.res[paste0(httr.bmd.res$gene.id, "_", httr.bmd.res$analysisID) %in% fc.filter$id[fc.filter$max_fc_abs > 1], ]
+write_parquet(httr.bmd.fc, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc1.parquet"))
 
 httr.bmd.fc <- httr.bmd.res[paste0(httr.bmd.res$gene.id, "_", httr.bmd.res$analysisID) %in% fc.filter$id[fc.filter$max_fc_abs > 2], ]
 write_parquet(httr.bmd.fc, paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc2.parquet"))
