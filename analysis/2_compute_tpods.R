@@ -25,10 +25,16 @@ bmd.paths <- c(paste0(data.path, "4_bmd_results/httr_bmd_aov.parquet"),
                paste0(data.path, "4_bmd_results/httr_bmd_nomic.parquet"),
                paste0(data.path, "4_bmd_results/htpp_bmd_all.parquet"),
                paste0(data.path, "4_bmd_results/htpp_bmd_aov.parquet"),
-               paste0(data.path, "4_bmd_results/htpp_bmd_wtt.parquet"))
+               paste0(data.path, "4_bmd_results/htpp_bmd_wtt.parquet"),
+               paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc1.parquet"),
+               paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc2.parquet"),
+               paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc3.parquet"),
+               paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc4.parquet"),
+               paste0(data.path, "4_bmd_results/httr_fc/httr_bmd_fc5.parquet"))
 
-names(bmd.paths) <- c("httr_aov", "httr_wtt", "httr_s1500", "httr_nomic", "htpp_all", "htpp_aov", "htpp_wtt")
-feature.set <- c("ANOVA", "WTT", "S1500", "Nomic", "All", "ANOVA", "WTT")
+names(bmd.paths) <- c("httr_aov", "httr_wtt", "httr_s1500", "httr_nomic", "htpp_all", "htpp_aov", "htpp_wtt", 
+                      "httr_fc1", "httr_fc2", "httr_fc3", "httr_fc4", "httr_fc5")
+feature.set <- c("ANOVA", "WTT", "S1500", "Nomic", "All", "ANOVA", "WTT", "FC1", "FC2", "FC3", "FC4", "FC5")
 
 # get gene set info
 gs.list <- readRDS("../2024_01_18_Dose_response_methods-data/data/gs_libraries/go_bp.rds")[["sets"]]
@@ -122,11 +128,7 @@ write_parquet(tpod.res, paste0(data.path, "5_tpod_results/univar_tpods.parquet")
 # HTTR ANOVA, HTTR WTT, HTPP All, HTPP ANOVA, HTPP WTT all fine (except for NAs - probably just a few NAs)
 # Don't need Nomic
 # Re-do S1500
-tpod.htpp <- read_parquet("/Users/jewald/repos/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/5_tpod_results/univar_tpods_htpp.parquet") %>% as.data.frame()
-tpod <- read_parquet("/Users/jewald/repos/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/5_tpod_results/univar_tpods.parquet") %>% as.data.frame()
-tpod <- tpod[tpod$Platform == "httr", ]
-
-tpod <- rbind(tpod, tpod.htpp)
+tpod <- read_parquet("/Users/jessicaewald/NetbeansProjects/2024_01_18_Dose_response_methods/2024_01_18_Dose_response_methods-data/data/5_tpod_results/univar_tpods.parquet") %>% as.data.frame()
 
 ### wipe ones that didn't work
 tpod <- tpod[tpod$Features != "Nomic", ]

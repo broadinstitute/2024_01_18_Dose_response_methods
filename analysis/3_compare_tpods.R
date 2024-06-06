@@ -5,7 +5,7 @@
 # Paired difference of tPOD dist mean (1 test for all 11 chemicals) between conditions
 # Paired difference of tPOD dist variance (1 test for all 11 chemicals) between conditions
 
-setwd("/Users/jewald/repos/2024_01_18_Dose_response_methods/analysis")
+setwd("/Users/jessicaewald/NetbeansProjects/2024_01_18_Dose_response_methods/analysis")
 library(arrow)
 library(dplyr)
 library(data.table)
@@ -252,4 +252,109 @@ ggplot(tpod.melt[tpod.melt$scenario == "scenario170", ], aes(x = log10_pod)) +
   theme(text=element_text(size=21))
 
 
+### Analyze FC tpods
+fc_ids = c("FC1", "FC2", "FC3", "FC4", "FC5")
+fc_tpods = read_parquet("../2024_01_18_Dose_response_methods-data/data/5_tpod_results/univar_tpods.parquet") %>% as.data.frame()
+fc_tpods = fc_tpods[fc_tpods$Features %in% fc_ids, ]
 
+fc_tpods = reshape2::melt(fc_tpods, id.vars = colnames(tpod.uni)[1:6], measure.vars = colnames(tpod.uni)[7:11], variable.name = "tpod_type")
+fc_tpods$log10_pod <- log10(fc_tpods$value)
+
+ggplot(fc_tpods[
+  (fc_tpods$Replicates == "2reps") &
+    (fc_tpods$tpod_type %in% c("POD_uni_centile", "POD_uni_mode", "POD_uni_lcrd", "POD_uni_gs")), ], aes(x = log10_pod, y = Features, color = Features, fill = Features)) +
+  geom_boxplot(alpha=0.3) +
+  facet_grid(cols = vars(Compound), rows = vars(tpod_type), scale = "free") +
+  theme_test() +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+
+# summary stats
+scenarios <- fc_tpods[,c("Compound", "Replicates", "Features", "tpod_type")] %>% distinct()
+scenarios$scenario <- paste0("scenario", c(1:dim(scenarios)[1]))
+fc_tpods <- merge(fc_tpods, scenarios, by = c("Compound", "Replicates", "Features", "tpod_type"))
+
+tpod.stats <- as.data.table(fc_tpods)
+tpod.stats <- tpod.stats[,.(Compound = Compound, Replicates = Replicates, Features = Features, POD_type = tpod_type, 
+                            POD_mean = mean(log10_pod, na.rm = TRUE), 
+                            POD_median = median(log10_pod, na.rm = TRUE),
+                            POD_sd = var(log10_pod, na.rm = TRUE),
+                            POD_mad = mad(log10_pod, na.rm = TRUE),
+                            POD_iqr = IQR(log10_pod, na.rm = TRUE)), 
+                         by = .(scenario, Compound)] %>% distinct() %>% na.omit()
+
+# FC2 vs. FC1
+tpod.fc <- tpod.stats[tpod.stats$Features %in% c("FC1", "FC2"), ]
+tpod.fc$id_col <- paste0(tpod.fc$Compound, "_", tpod.fc$Replicates, "_", tpod.fc$POD_type)
+
+tpod.fc.mean <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_mean") %>% na.omit()
+tpod.fc.mean$diff <- tpod.fc.mean[,"FC2"] - tpod.fc.mean[,"FC1"]
+tpod.fc.mean$fc <- (10^tpod.fc.mean$FC2)/(10^tpod.fc.mean$FC1)
+mean(tpod.fc.mean$fc)
+t.test(x = unlist(tpod.fc.mean[,"FC1"]), y = unlist(tpod.fc.mean[,"FC2"]), paired = T)
+# FC2 ~1.5 fold higher, p = 0.1049
+
+tpod.fc.iqr <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_iqr") %>% na.omit()
+tpod.fc.iqr$diff <- tpod.fc.iqr[,"FC2"] - tpod.fc.iqr[,"FC1"]
+t.test(x = unlist(tpod.fc.iqr[,"FC2"]), y = unlist(tpod.fc.iqr[,"FC1"]), paired = T)
+mean(tpod.fc.iqr$diff)
+# IQR 0.05 wider, p = 0.13
+
+
+# FC3 vs. FC2
+tpod.fc <- tpod.stats[tpod.stats$Features %in% c("FC2", "FC3"), ]
+tpod.fc$id_col <- paste0(tpod.fc$Compound, "_", tpod.fc$Replicates, "_", tpod.fc$POD_type)
+
+tpod.fc.mean <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_mean") %>% na.omit()
+tpod.fc.mean$diff <- tpod.fc.mean[,"FC3"] - tpod.fc.mean[,"FC2"]
+tpod.fc.mean$fc <- (10^tpod.fc.mean$FC3)/(10^tpod.fc.mean$FC2)
+mean(tpod.fc.mean$fc)
+t.test(x = unlist(tpod.fc.mean[,"FC2"]), y = unlist(tpod.fc.mean[,"FC3"]), paired = T)
+# FC3 ~3 fold higher, p = 1.004e-05
+
+tpod.fc.iqr <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_iqr") %>% na.omit()
+tpod.fc.iqr$diff <- tpod.fc.iqr[,"FC3"] - tpod.fc.iqr[,"FC2"]
+t.test(x = unlist(tpod.fc.iqr[,"FC3"]), y = unlist(tpod.fc.iqr[,"FC2"]), paired = T)
+mean(tpod.fc.iqr$diff)
+# IQR 0.03 wider, p = 0.30
+
+
+# FC4 vs. FC3
+tpod.fc <- tpod.stats[tpod.stats$Features %in% c("FC3", "FC4"), ]
+tpod.fc$id_col <- paste0(tpod.fc$Compound, "_", tpod.fc$Replicates, "_", tpod.fc$POD_type)
+
+tpod.fc.mean <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_mean") %>% na.omit()
+tpod.fc.mean$diff <- tpod.fc.mean[,"FC4"] - tpod.fc.mean[,"FC3"]
+tpod.fc.mean$fc <- (10^tpod.fc.mean$FC4)/(10^tpod.fc.mean$FC3)
+mean(tpod.fc.mean$fc)
+t.test(x = unlist(tpod.fc.mean[,"FC3"]), y = unlist(tpod.fc.mean[,"FC4"]), paired = T)
+# FC4 ~1.5 fold higher, p = 1.437e-05
+
+tpod.fc.iqr <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_iqr") %>% na.omit()
+tpod.fc.iqr$diff <- tpod.fc.iqr[,"FC4"] - tpod.fc.iqr[,"FC3"]
+t.test(x = unlist(tpod.fc.iqr[,"FC4"]), y = unlist(tpod.fc.iqr[,"FC3"]), paired = T)
+mean(tpod.fc.iqr$diff)
+# IQR 0.01 wider, p = 0.76
+
+
+# FC5 vs. FC4
+tpod.fc <- tpod.stats[tpod.stats$Features %in% c("FC4", "FC5"), ]
+tpod.fc$id_col <- paste0(tpod.fc$Compound, "_", tpod.fc$Replicates, "_", tpod.fc$POD_type)
+
+tpod.fc.mean <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_mean") %>% na.omit()
+tpod.fc.mean$diff <- tpod.fc.mean[,"FC5"] - tpod.fc.mean[,"FC4"]
+tpod.fc.mean$fc <- (10^tpod.fc.mean$FC5)/(10^tpod.fc.mean$FC4)
+mean(tpod.fc.mean$fc)
+t.test(x = unlist(tpod.fc.mean[,"FC4"]), y = unlist(tpod.fc.mean[,"FC5"]), paired = T)
+# FC4 ~1.5 fold higher, p = 0.0001214
+
+tpod.fc.iqr <- dcast(tpod.fc, id_col ~ Features, value.var = "POD_iqr") %>% na.omit()
+tpod.fc.iqr$diff <- tpod.fc.iqr[,"FC5"] - tpod.fc.iqr[,"FC4"]
+t.test(x = unlist(tpod.fc.iqr[,"FC5"]), y = unlist(tpod.fc.iqr[,"FC4"]), paired = T)
+mean(tpod.fc.iqr$diff)
+# IQR 0.01 wider, p = 0.76
